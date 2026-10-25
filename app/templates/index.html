@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+  <h1 id="main-heading">DevOps Task Manager</h1>
+  <p>Plan your work, tick things off, and watch it run on AWS.</p>
+  <div class="chips">
+    <span class="chip">Flask</span><span class="chip">PostgreSQL</span>
+    <span class="chip">Docker Compose</span><span class="chip">AWS ALB + Auto Scaling</span>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="stat total"><b id="stat-total">{{ stats.total }}</b><span>Total tasks</span></div>
+  <div class="stat pend"><b id="stat-pending">{{ stats.pending }}</b><span>Pending</span></div>
+  <div class="stat done"><b id="stat-done">{{ stats.done }}</b><span>Completed</span></div>
+</section>
+
+<form class="add" action="/add" method="post">
+  <input id="task-input" type="text" name="title" placeholder="What needs to be done?" maxlength="200" required autocomplete="off">
+  <button id="add-btn" class="btn" type="submit">Add task</button>
+</form>
+
+<div class="tabs" role="tablist">
+  <button class="tab on" data-filter="all" type="button">All</button>
+  <button class="tab" data-filter="active" type="button">Active</button>
+  <button class="tab" data-filter="done" type="button">Done</button>
+</div>
+
+<ul id="task-list">
+  {% for t in tasks %}
+  <li class="task {{ 'is-done' if t[2] }}" data-done="{{ '1' if t[2] else '0' }}">
+    <form class="inline" action="/toggle/{{ t[0] }}" method="post">
+      <button class="check {{ 'on' if t[2] }}" type="submit" title="Mark as {{ 'pending' if t[2] else 'done' }}">{{ '✓' if t[2] }}</button>
+    </form>
+    <div class="body">
+      <span class="title">{{ t[1] }}</span>
+      <small class="meta">{{ t[3].strftime('%d %b %Y, %H:%M') }}</small>
+    </div>
+    <form class="inline" action="/delete/{{ t[0] }}" method="post">
+      <button class="del" type="submit">Delete</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+
+<div id="empty-state" class="empty" {% if tasks %}hidden{% endif %}>
+  {% if tasks %}Nothing in this view.{% else %}No tasks yet. Add your first one above.{% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var tabs = document.querySelectorAll('.tab');
+    var items = document.querySelectorAll('#task-list li.task');
+    var empty = document.getElementById('empty-state');
+    var hasTasks = items.length > 0;
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        tabs.forEach(function (t) { t.classList.remove('on'); });
+        tab.classList.add('on');
+        var f = tab.dataset.filter, shown = 0;
+        items.forEach(function (li) {
+          var d = li.dataset.done === '1';
+          var show = f === 'all' || (f === 'done' && d) || (f === 'active' && !d);
+          li.style.display = show ? '' : 'none';
+          if (show) shown++;
+        });
+        if (hasTasks) { empty.hidden = shown > 0; empty.textContent = 'Nothing in this view.'; }
+      });
+    });
+  })();
+</script>
+{% endblock %}

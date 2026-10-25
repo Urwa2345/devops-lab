@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}System Status | DevOps Task Manager{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1 id="system-heading">System Status</h1>
+  <p>Which container and instance answered this request. Refresh behind the load balancer to see it change.</p>
+</section>
+
+<div class="status">
+  <span class="dot {{ '' if db_ok else 'bad' }}"></span>
+  <span id="db-status">{{ 'Database connected' if db_ok else 'Database unreachable' }}</span>
+</div>
+
+<div class="panel">
+  {% for label, value in info.items() %}
+  <div class="row"><span>{{ label }}</span><code>{{ value }}</code></div>
+  {% endfor %}
+</div>
+
+<p class="note">
+  Each EC2 instance runs its own web and database containers with a Docker volume, so the task count can differ
+  between instances. The Auto Scaling Group replaces unhealthy instances automatically, and the load balancer only
+  sends traffic to instances whose <code>/health</code> check passes.
+</p>
+{% endblock %}

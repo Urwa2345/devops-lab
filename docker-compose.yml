@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: urwa_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: urwatasks
+      POSTGRES_USER: urwa
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-urwapass}
+    volumes:
+      - pgdata:/var/lib/postgresql/data      # named volume = data survives container recreation
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U urwa -d urwatasks"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - appnet
+
+  web:
+    build: ./app
+    image: urwa-taskflow:1.0
+    container_name: urwa_web
+    restart: unless-stopped
+    environment:
+      DB_HOST: db                             # service name = hostname on the compose network
+      DB_NAME: urwatasks
+      DB_USER: urwa
+      DB_PASSWORD: ${DB_PASSWORD:-urwapass}
+    ports:
+      - "80:5000"                             # host port 80 -> container port 5000
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - appnet
+
+volumes:
+  pgdata:
+
+networks:
+  appnet:
